@@ -78,7 +78,7 @@ function save(){localStorage.setItem(KEY,JSON.stringify(state));}
 function load(){
  try{
   const x=JSON.parse(localStorage.getItem(KEY));
-  if(x){state=Object.assign(emptyState(),x);state.decision=Object.assign(emptyState().decision,x.decision||{});state.learning=Object.assign(emptyState().learning,x.learning||{});state.tree=Object.assign(emptyState().tree,x.tree||{});state.group=Object.assign(emptyState().group,x.group||{});state.history=x.history||[];state.scenarios=x.scenarios||[];state.timeline=x.timeline||[];state.negotiation=x.negotiation||[];}
+  if(x){state=Object.assign(emptyState(),x);state.decision=Object.assign(emptyState().decision,x.decision||{});state.learning=Object.assign(emptyState().learning,x.learning||{});state.tree=Object.assign(emptyState().tree,x.tree||{});state.group=Object.assign(emptyState().group,x.group||{});state.causal=Object.assign(emptyState().causal,x.causal||{});state.causal.nodes=x.causal?.nodes||state.causal.nodes;state.causal.edges=x.causal?.edges||state.causal.edges;state.history=x.history||[];state.scenarios=x.scenarios||[];state.timeline=x.timeline||[];state.negotiation=x.negotiation||[];}
  }catch(e){console.warn(e)}
 }
 function tokenise(s){return String(s||'').toLowerCase().replace(/[^a-z0-9\s-]/g,' ').split(/\s+/).filter(Boolean)}
@@ -321,6 +321,29 @@ function scenarioResult(s){return rank(state.decision.objective,{weights:(s.weig
 function renderScenarios(){
  const arr=state.scenarios||[];$('#scenarioResults').innerHTML=arr.length?arr.map((s,i)=>{const r=scenarioResult(s);return '<div class="scenario-row"><div><strong>'+esc(s.name)+'</strong><small>'+esc(s.note||'')+'</small></div><div><span>leader</span><strong>'+esc(r?.name||'—')+'</strong></div><button class="icon-btn" data-remove-scenario="'+i+'">×</button></div>'}).join(''):'<div class="empty">No scenarios yet.</div>';
 }
+function renderCausal(){
+ const nodes=state.causal.nodes,edges=state.causal.edges;
+ $('#causalNodes').innerHTML=nodes.map((n,i)=>'<div class="row-editor"><input data-cnode-name="'+i+'" value="'+esc(n.name)+'"><input class="mini" data-cnode-base="'+i+'" type="number" min="0" max="100" value="'+n.base+'"><button class="icon-btn" data-remove-cnode="'+i+'">×</button></div>').join('');
+ $('#causalIntervene').innerHTML=nodes.map((n,i)=>'<option value="'+i+'">'+esc(n.name)+'</option>').join('');
+ $('#causalTarget').innerHTML=nodes.map((n,i)=>'<option value="'+i+'">'+esc(n.name)+'</option>').join('');
+ $('#causalGraph').innerHTML=edges.map((e,i)=>'<div class="info-row"><div><strong>'+esc(nodes[e.from]?.name||'?')+' → '+esc(nodes[e.to]?.name||'?')+'</strong><small>effect '+Number(e.effect).toFixed(2)+'</small></div><button class="icon-btn" data-remove-cedge="'+i+'">×</button></div>').join('')||'<div class="empty">Add at least one causal relationship.</div>';
+}
+function causalPropagate(interventionIndex=null,interventionValue=null){
+ const n=state.causal.nodes.length,values=nodesBase();
+ function nodesBase(){return state.causal.nodes.map(x=>Number(x.base)||50)}
+ const out=values.slice(),forced={};if(interventionIndex!=null){out[interventionIndex]=Number(interventionValue);forced[interventionIndex]=true}
+ for(let pass=0;pass<8;pass++){
+  state.causal.edges.forEach(e=>{if(forced[e.to])return;const delta=(out[e.from]-50)*Number(e.effect||0);out[e.to]=clamp(out[e.to]+delta,0,100)});
+ }
+ return out;
+}
+function runCausal(){
+ const ii=Number($('#causalIntervene').value)||0,ti=Number($('#causalTarget').value)||0,val=Number($('#causalValue').value)||50;
+ const base=causalPropagate(),doV=causalPropagate(ii,val),delta=doV[ti]-base[ti];
+ const direct=state.causal.edges.filter(e=>e.from===ii&&e.to===ti).reduce((s,e)=>s+(Number(e.effect)||0),0);
+ $('#causalResult').innerHTML='<div class="trace-item"><strong>Baseline target:</strong> '+base[ti].toFixed(1)+'</div><div class="trace-item"><strong>Intervened target:</strong> '+doV[ti].toFixed(1)+'</div><div class="trace-item"><strong>Total modeled effect:</strong> '+(delta>=0?'+':'')+delta.toFixed(1)+' points</div><div class="trace-item"><strong>Direct edge effect:</strong> '+direct.toFixed(2)+' • remaining effect comes through modeled paths</div><div class="warning">Interpretation depends entirely on the causal relationships you entered; the lab does not infer causality automatically.</div>';
+ state.learning.events.push({type:'causal-intervention',t:now(),from:ii,to:ti,value:val,delta});save();
+}
 function renderTree(){
  $('#treeBranches').innerHTML=state.tree.branches.map((b,i)=>'<div class="tree-branch"><input data-tree-name="'+i+'" value="'+esc(b.name)+'"><input data-tree-prob="'+i+'" type="number" step=".01" min="0" max="1" value="'+b.prob+'"><input data-tree-value="'+i+'" type="number" value="'+b.value+'"><button class="icon-btn" data-remove-branch="'+i+'">×</button></div>').join('');
  const total=mean(state.tree.branches.map(b=>b.prob));const ev=state.tree.branches.reduce((s,b)=>s+b.prob*b.value,0);$('#treeValue').textContent='Expected value '+fmtNum(ev);
@@ -485,6 +508,11 @@ document.addEventListener('click',e=>{
  if(e.target.id==='saveDecision'){syncBuild();saveDecision();renderAll();alert('Decision snapshot saved.')}
  if(e.target.id==='startInterview'){syncBuild();saveDecision();setTab('interview')}
  if(e.target.dataset.choice){const q=currentQuestion();if(q){addComparison(q,e.target.dataset.choice)}}
+ if(e.target.id==='addCausalNode'){state.causal.nodes.push({id:uid(),name:'New node',base:50});save();renderCausal()}
+ if(e.target.id==='addCausalEdge'){if(state.causal.nodes.length>=2){state.causal.edges.push({from:0,to:Math.min(1,state.causal.nodes.length-1),effect:.2});save();renderCausal()}}
+ if(e.target.id==='runCausal'){runCausal()}
+ if(e.target.dataset.removeCnode){const i=Number(e.target.dataset.removeCnode);const removed=state.causal.nodes[i].id;state.causal.nodes.splice(i,1);state.causal.edges=state.causal.edges.filter(e=>e.from!==i&&e.to!==i).map(e=>({from:e.from>i?e.from-1:e.from,to:e.to>i?e.to-1:e.to,effect:e.effect}));save();renderCausal()}
+ if(e.target.dataset.removeCedge){state.causal.edges.splice(Number(e.target.dataset.removeCedge),1);save();renderCausal()}
  if(e.target.id==='addScenario'){const weights=baseWeights();state.scenarios.push({id:uid(),name:$('#scenarioName').value||'Scenario '+(state.scenarios.length+1),note:$('#scenarioNote').value,weights:weights.map((x,i)=>x*(Number($('[data-scenario-w="'+i+'"]').value||100)/100)),criterionMultipliers:state.decision.criteria.map(()=>1)});save();renderScenarios()}
  if(e.target.id==='addBranch'){state.tree.branches.push({name:'New branch',prob:.1,value:0});renderTree()}
  if(e.target.id==='calcTree'){syncTree();renderTree();save()}
@@ -530,6 +558,8 @@ function syncLive(e){
  if(t.dataset.direction!=null)state.decision.criteria[Number(t.dataset.direction)].direction=t.value;
  if(t.dataset.group!=null)state.decision.criteria[Number(t.dataset.group)].group=t.value||'general';
  if(t.dataset.v){const [ci,oi,k]=t.dataset.v.split(':');state.decision.criteria[Number(ci)].values[Number(oi)][k]=Number(t.value)||0}
+ if(t.dataset.cnodeName!=null)state.causal.nodes[Number(t.dataset.cnodeName)].name=t.value;
+ if(t.dataset.cnodeBase!=null)state.causal.nodes[Number(t.dataset.cnodeBase)].base=Number(t.value)||0;
  if(t.dataset.memberName!=null)state.group.members[Number(t.dataset.memberName)].name=t.value;
  if(t.dataset.memberInfluence!=null)state.group.members[Number(t.dataset.memberInfluence)].influence=Number(t.value)||1;
  if(t.dataset.memberWeight){const [mi,ci]=t.dataset.memberWeight.split(':');const c=state.decision.criteria[Number(ci)];state.group.members[Number(mi)].weights[c.id]=Number(t.value);$('#mw'+mi+'_'+ci).textContent=t.value+'%';}
