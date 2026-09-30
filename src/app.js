@@ -58,6 +58,7 @@ const emptyState=()=>({
  decision:{
   id:uid(),name:'',context:'',domain:'general',horizon:'medium',risk:'balanced',objective:'expected',
   options:[{id:uid(),name:'Option A',cost:0,time:0,risk:30},{id:uid(),name:'Option B',cost:0,time:0,risk:30},{id:uid(),name:'Option C',cost:0,time:0,risk:30}],
+  constraints:{budget:0,time:0,deadline:0},
   criteria:[{id:uid(),name:'Value',direction:'higher',group:'general',values:[{low:55,mid:65,high:75},{low:45,mid:55,high:65},{low:50,mid:60,high:70}]}]
  },
  learning:{criteria:{},options:{},concepts:{},comparisons:[],outcomes:[],events:[],questionHistory:[],pairConflicts:[]},
@@ -265,7 +266,7 @@ function buildRowsHTML(){
  return h;
 }
 function renderBuild(){
- $('#decisionName').value=state.decision.name;$('#decisionContext').value=state.decision.context;$('#domainSelect').value=state.decision.domain;$('#horizonSelect').value=state.decision.horizon;$('#riskSelect').value=state.decision.risk;$('#objectiveSelect').value=state.decision.objective;$('#modelObjectiveInline').value=state.decision.objective;
+ $('#decisionName').value=state.decision.name;$('#decisionContext').value=state.decision.context;$('#domainSelect').value=state.decision.domain;$('#horizonSelect').value=state.decision.horizon;$('#riskSelect').value=state.decision.risk;$('#objectiveSelect').value=state.decision.objective;$('#modelObjectiveInline').value=state.decision.objective;$('#budgetLimit').value=state.decision.constraints?.budget||0;$('#timeLimit').value=state.decision.constraints?.time||0;$('#deadlineDays').value=state.decision.constraints?.deadline||0;
  $('#optionEditor').innerHTML=state.decision.options.map((o,i)=>'<div class="row-editor"><input data-oi="'+i+'" value="'+esc(o.name)+'" placeholder="Option '+(i+1)+'"><input class="mini" data-ocost="'+i+'" type="number" value="'+(o.cost||0)+'" placeholder="cost"><input class="mini" data-otime="'+i+'" type="number" value="'+(o.time||0)+'" placeholder="hours"><input class="mini" data-orisk="'+i+'" type="number" min="0" max="100" value="'+(o.risk||30)+'" placeholder="risk"><button class="icon-btn" data-remove-option="'+i+'">×</button></div>').join('');
  $('#criteriaEditor').innerHTML=buildRowsHTML();
  const gs=[...new Set(state.decision.criteria.map(c=>c.group||'general'))];
@@ -326,7 +327,7 @@ function renderCausal(){
  $('#causalNodes').innerHTML=nodes.map((n,i)=>'<div class="row-editor"><input data-cnode-name="'+i+'" value="'+esc(n.name)+'"><input class="mini" data-cnode-base="'+i+'" type="number" min="0" max="100" value="'+n.base+'"><button class="icon-btn" data-remove-cnode="'+i+'">×</button></div>').join('');
  $('#causalIntervene').innerHTML=nodes.map((n,i)=>'<option value="'+i+'">'+esc(n.name)+'</option>').join('');
  $('#causalTarget').innerHTML=nodes.map((n,i)=>'<option value="'+i+'">'+esc(n.name)+'</option>').join('');
- $('#causalGraph').innerHTML=edges.map((e,i)=>'<div class="info-row"><div><strong>'+esc(nodes[e.from]?.name||'?')+' → '+esc(nodes[e.to]?.name||'?')+'</strong><small>effect '+Number(e.effect).toFixed(2)+'</small></div><button class="icon-btn" data-remove-cedge="'+i+'">×</button></div>').join('')||'<div class="empty">Add at least one causal relationship.</div>';
+ $('#causalGraph').innerHTML=edges.map((e,i)=>'<div class="row-editor causal-edge"><select data-cedge-from="'+i+'">'+nodes.map((n,j)=>'<option value="'+j+'" '+(j===e.from?'selected':'')+'>'+esc(n.name)+'</option>').join('')+'</select><select data-cedge-to="'+i+'">'+nodes.map((n,j)=>'<option value="'+j+'" '+(j===e.to?'selected':'')+'>'+esc(n.name)+'</option>').join('')+'</select><input data-cedge-effect="'+i+'" type="number" step=".05" min="-1" max="1" value="'+e.effect+'"><button class="icon-btn" data-remove-cedge="'+i+'">×</button></div>').join('')||'<div class="empty">Add at least one causal relationship.</div>';
 }
 function causalPropagate(interventionIndex=null,interventionValue=null){
  const n=state.causal.nodes.length,values=nodesBase();
@@ -560,6 +561,9 @@ function syncLive(e){
  if(t.dataset.v){const [ci,oi,k]=t.dataset.v.split(':');state.decision.criteria[Number(ci)].values[Number(oi)][k]=Number(t.value)||0}
  if(t.dataset.cnodeName!=null)state.causal.nodes[Number(t.dataset.cnodeName)].name=t.value;
  if(t.dataset.cnodeBase!=null)state.causal.nodes[Number(t.dataset.cnodeBase)].base=Number(t.value)||0;
+ if(t.dataset.cedgeFrom!=null)state.causal.edges[Number(t.dataset.cedgeFrom)].from=Number(t.value);
+ if(t.dataset.cedgeTo!=null)state.causal.edges[Number(t.dataset.cedgeTo)].to=Number(t.value);
+ if(t.dataset.cedgeEffect!=null)state.causal.edges[Number(t.dataset.cedgeEffect)].effect=Number(t.value)||0;
  if(t.dataset.memberName!=null)state.group.members[Number(t.dataset.memberName)].name=t.value;
  if(t.dataset.memberInfluence!=null)state.group.members[Number(t.dataset.memberInfluence)].influence=Number(t.value)||1;
  if(t.dataset.memberWeight){const [mi,ci]=t.dataset.memberWeight.split(':');const c=state.decision.criteria[Number(ci)];state.group.members[Number(mi)].weights[c.id]=Number(t.value);$('#mw'+mi+'_'+ci).textContent=t.value+'%';}
@@ -570,7 +574,7 @@ function syncLive(e){
  if(['dashboard','model'].some(x=>$('#panel-'+x).classList.contains('active')))renderPanel('dashboard'),renderPanel('model');
 }
 function syncBuild(){
- state.decision.name=$('#decisionName').value.trim();state.decision.context=$('#decisionContext').value.trim();state.decision.horizon=$('#horizonSelect').value;state.decision.risk=$('#riskSelect').value;state.decision.objective=$('#objectiveSelect').value;state.lastEvaluatedAt=now();save();
+ state.decision.name=$('#decisionName').value.trim();state.decision.context=$('#decisionContext').value.trim();state.decision.horizon=$('#horizonSelect').value;state.decision.risk=$('#riskSelect').value;state.decision.objective=$('#objectiveSelect').value;state.decision.constraints={budget:Number($('#budgetLimit').value)||0,time:Number($('#timeLimit').value)||0,deadline:Number($('#deadlineDays').value)||0};state.lastEvaluatedAt=now();save();
 }
 function syncTree(){
  state.tree.root=$('#treeRoot').value;state.tree.branches.forEach((b,i)=>{b.name=$('[data-tree-name="'+i+'"]').value;b.prob=Number($('[data-tree-prob="'+i+'"]').value)||0;b.value=Number($('[data-tree-value="'+i+'"]').value)||0});
