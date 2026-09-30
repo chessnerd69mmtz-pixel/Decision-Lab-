@@ -1,134 +1,271 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#11162b">
-<meta name="description" content="Decision Lab — privacy-first adaptive decision intelligence with local preference learning.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10182e">
+<meta name="description" content="Decision Lab — adaptive decision intelligence, uncertainty modeling, optimization, learning and outcome calibration.">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%2311162b%22/><path d=%22M25 50h50M50 25v50%22 stroke=%22white%22 stroke-width=%2214%22 stroke-linecap=%22round%22/></svg>">
 <link rel="stylesheet" href="src/styles.css">
-<title>Decision Lab — Adaptive Decision Intelligence</title>
+<title>Decision Lab — Decision Intelligence</title>
 </head>
 <body>
-<div class="app-shell">
+<div id="app">
 <header class="topbar">
-  <div class="brand"><div class="brand-mark">DL</div><div><h1>Decision Lab</h1><p>Adaptive decision intelligence · local-first</p></div></div>
-  <div class="top-actions"><span class="status" id="learningStatus">Local model ready</span><button class="ghost" id="resetBtn">Reset</button><button class="primary" id="demoBtn">Load Demo</button></div>
+  <div class="brand"><div class="brand-mark">DL</div><div><h1>Decision Lab</h1><p>Adaptive decision intelligence • local-first</p></div></div>
+  <div class="top-actions"><span id="modelBadge" class="status">Model ready</span><button id="loadDemo" class="secondary">Load demo</button><button id="resetAll" class="ghost">Reset</button></div>
 </header>
 
-<main>
 <section class="hero card">
   <div>
-    <span class="eyebrow">LEARN · ANALYZE · SIMULATE · REFLECT</span>
-    <h2>A decision system that learns your tradeoffs instead of making them up.</h2>
-    <p>Decision Lab combines pairwise preference learning, uncertainty-aware active questioning, local semantic memory, outcome feedback, Pareto analysis and Monte Carlo robustness testing. Core analysis runs in your browser with no API key.</p>
-    <div class="hero-actions"><button class="primary large" id="jumpBuildBtn">Build a decision →</button><button class="secondary large" id="howItWorksBtn">How the model works</button></div>
+    <span class="eyebrow">24 DECISION CAPABILITIES · ONE LOCAL ENGINE</span>
+    <h2>Model the decision, not just the score.</h2>
+    <p>Decision Lab combines preference learning, uncertainty, active information gathering, scenarios, decision trees, constrained optimization, group consensus, negotiation, causal analysis and outcome calibration. Every major result is inspectable and editable.</p>
+    <div class="hero-actions"><button class="primary large" data-jump="build">Start building →</button><button class="secondary large" id="openModelCard">Model card</button></div>
   </div>
-  <div class="hero-stats">
-    <div><strong id="questionCount">0</strong><span>preference observations</span></div>
-    <div><strong id="decisionCount">0</strong><span>decision records</span></div>
-    <div><strong id="conceptCount">0</strong><span>learned concepts</span></div>
+  <div class="hero-grid">
+    <div class="hero-stat"><strong id="statObs">0</strong><span>learning observations</span></div>
+    <div class="hero-stat"><strong id="statDecisions">0</strong><span>saved decisions</span></div>
+    <div class="hero-stat"><strong id="statMemory">0</strong><span>learned concepts</span></div>
+    <div class="hero-stat"><strong id="statStaleness">Fresh</strong><span>decision freshness</span></div>
   </div>
 </section>
 
-<nav class="tabs" aria-label="Decision Lab sections">
-  <button class="tab active" data-tab="setup">1 · Build</button>
-  <button class="tab" data-tab="learn">2 · Learn</button>
-  <button class="tab" data-tab="analyze">3 · Analyze</button>
-  <button class="tab" data-tab="simulate">4 · Simulate</button>
-  <button class="tab" data-tab="reflect">5 · Reflect</button>
-  <button class="tab" data-tab="memory">6 · Memory</button>
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="dashboard">Dashboard</button>
+  <button class="tab" data-tab="build">Build</button>
+  <button class="tab" data-tab="interview">Interview</button>
+  <button class="tab" data-tab="model">Model</button>
+  <button class="tab" data-tab="scenarios">Scenarios</button>
+  <button class="tab" data-tab="tree">Decision Tree</button>
+  <button class="tab" data-tab="optimize">Optimize</button>
+  <button class="tab" data-tab="group">Group</button>
+  <button class="tab" data-tab="negotiate">Negotiate</button>
+  <button class="tab" data-tab="timeline">Timeline</button>
+  <button class="tab" data-tab="outcomes">Outcomes</button>
+  <button class="tab" data-tab="replay">Replay</button>
+  <button class="tab" data-tab="memory">Memory</button>
+  <button class="tab" data-tab="templates">Templates</button>
 </nav>
 
-<section class="tab-panel active" id="tab-setup">
-  <div class="grid two">
-    <div class="card padded">
-      <div class="section-head"><div><span class="eyebrow">DECISION</span><h3>Frame the problem</h3></div></div>
-      <label>Decision name<input id="decisionName" placeholder="e.g. Choose a new laptop"></label>
-      <label>Context<textarea id="decisionContext" rows="3" placeholder="What is the situation, constraints, or goal?"></textarea></label>
-      <div class="section-head compact"><div><span class="eyebrow">OPTIONS</span><h3>Your choices</h3></div><button class="small" id="addOptionBtn">+ Add</button></div>
-      <div id="optionsList" class="stack"></div>
-    </div>
-    <div class="card padded">
-      <div class="section-head"><div><span class="eyebrow">CRITERIA</span><h3>What should influence it?</h3></div><button class="small" id="addCriterionBtn">+ Add</button></div>
-      <p class="muted">Use plain language. The local semantic memory engine links related criteria such as “battery”, “runtime” and “power efficiency” across decisions.</p>
-      <div id="criteriaList" class="criteria-list"></div>
-    </div>
-  </div>
-  <div class="card padded matrix-card">
-    <div class="section-head"><div><span class="eyebrow">SCORING MATRIX</span><h3>Rate the options</h3></div><span class="pill">0–100</span></div>
-    <div id="scoreMatrix" class="matrix-wrap"></div>
-  </div>
-  <div class="card padded import-card">
-    <div><span class="eyebrow">OPTIONAL CONTEXT</span><h3>What is your decision horizon?</h3><p class="muted">This helps the model distinguish short-term and long-term priorities.</p></div>
-    <div class="inline-grid"><label>Time horizon<select id="horizonSelect"><option value="short">Short term</option><option value="medium" selected>Medium term</option><option value="long">Long term</option></select></label><label>Risk tolerance<select id="riskSelect"><option value="low">Risk averse</option><option value="balanced" selected>Balanced</option><option value="high">Risk tolerant</option></select></label></div>
-  </div>
-  <div class="footer-actions"><button class="primary large" id="startLearningBtn">Start adaptive learning →</button></div>
-</section>
-
-<section class="tab-panel" id="tab-learn">
-  <div class="grid two">
-    <div class="card padded learning-card">
-      <span class="eyebrow">ACTIVE LEARNING</span><h3 id="questionTitle">No question yet</h3>
-      <p id="questionReason" class="muted">Build a decision first. The lab will select the next question using uncertainty and expected ranking impact.</p>
-      <div id="questionChoices" class="choice-grid"></div>
-      <div class="learning-progress"><div id="learningProgressBar"></div></div>
-      <p class="tiny" id="learningProgressText">0 comparisons recorded</p>
-    </div>
-    <div class="card padded"><span class="eyebrow">LEARNED PROFILE</span><h3>Current criterion importance</h3><div id="preferenceBars" class="bars"></div><div id="profileConfidence" class="micro-panel"></div></div>
-  </div>
-  <div class="grid two">
-    <div class="card padded"><span class="eyebrow">MODEL TRANSPARENCY</span><h3>Why this question?</h3><div id="questionTrace" class="trace"></div></div>
-    <div class="card padded"><span class="eyebrow">TRAINING SIGNALS</span><h3>What the model has seen</h3><div id="trainingSignals" class="signal-grid"></div></div>
-  </div>
-</section>
-
-<section class="tab-panel" id="tab-analyze">
+<main>
+<section class="panel active" id="panel-dashboard">
   <div class="grid four">
-    <div class="metric card"><span>Current leader</span><strong id="topOption">—</strong><small id="topOptionScore">—</small></div>
-    <div class="metric card"><span>Ranking confidence</span><strong id="confidence">—</strong><small>calibrated from gap + uncertainty</small></div>
-    <div class="metric card"><span>Expected regret</span><strong id="regret">—</strong><small>loss if you miss the best fit</small></div>
-    <div class="metric card"><span>Pareto-efficient</span><strong id="paretoCount">—</strong><small>options not dominated on all criteria</small></div>
+    <div class="metric card"><span>Current leader</span><strong id="dashLeader">—</strong><small id="dashLeaderScore">—</small></div>
+    <div class="metric card"><span>Robustness</span><strong id="dashRobustness">—</strong><small>Monte Carlo win probability</small></div>
+    <div class="metric card"><span>Preference consistency</span><strong id="dashConsistency">—</strong><small>conflict-aware</small></div>
+    <div class="metric card"><span>Decision age</span><strong id="dashAge">—</strong><small>refresh if assumptions drift</small></div>
   </div>
   <div class="grid two">
-    <div class="card padded"><div class="section-head"><div><span class="eyebrow">RESULTS</span><h3>Learned utility</h3></div></div><div id="resultBars" class="bars"></div></div>
-    <div class="card padded"><div class="section-head"><div><span class="eyebrow">EXPLANATION</span><h3>Decision trace</h3></div></div><div id="analysisTrace" class="trace"></div></div>
-  </div>
-  <div class="card padded"><div class="section-head"><div><span class="eyebrow">PARETO FRONTIER</span><h3>Non-dominated choices</h3></div></div><div id="paretoList" class="option-grid"></div></div>
-  <div class="card padded"><div class="section-head"><div><span class="eyebrow">SENSITIVITY</span><h3>What could flip the result?</h3></div></div><div id="sensitivityList" class="sensitivity-list"></div></div>
-  <div class="card padded"><div class="section-head"><div><span class="eyebrow">SCENARIOS</span><h3>Test alternate worlds</h3></div><button class="small" id="addScenarioBtn">+ Add scenario</button></div><div id="scenarioList" class="scenario-list"></div></div>
-  <div class="footer-actions"><button class="primary large" id="runSimulationBtn">Run Monte Carlo stress test →</button></div>
-</section>
-
-<section class="tab-panel" id="tab-simulate">
-  <div class="card padded simulation-card"><div class="section-head"><div><span class="eyebrow">MONTE CARLO</span><h3>Stress-test uncertain preference profiles</h3></div><span class="pill" id="simulationCount">0 runs</span></div><p class="muted">Weights, latent preference signals and uncertainty are sampled to estimate how often each option leads.</p><div class="sim-layout"><div class="sim-chart"><canvas id="simChart" height="340"></canvas></div><div id="simResults" class="sim-results"></div></div></div>
-  <div class="grid two"><div class="card padded"><span class="eyebrow">COUNTERFACTUALS</span><h3>Change one assumption</h3><div id="counterfactuals" class="counterfactuals"></div></div><div class="card padded"><span class="eyebrow">VALUE OF INFORMATION</span><h3>What should you learn next?</h3><div id="voiList" class="trace"></div></div></div>
-</section>
-
-<section class="tab-panel" id="tab-reflect">
-  <div class="grid two">
-    <div class="card padded"><span class="eyebrow">OUTCOME FEEDBACK</span><h3>Close the learning loop</h3><p class="muted">After you make a real decision, record what happened. The model uses this as a reward signal to recalibrate your longer-term preference profile.</p>
-      <div class="form-grid"><label>Chosen option<select id="outcomeOption"></select></label><label>Satisfaction<input id="outcomeSatisfaction" type="range" min="0" max="100" value="70"><span class="range-value" id="satisfactionValue">70</span></label><label>Outcome quality<input id="outcomeQuality" type="range" min="0" max="100" value="70"><span class="range-value" id="qualityValue">70</span></label></div>
-      <label>What did you learn?<textarea id="outcomeNote" rows="4" placeholder="What mattered in reality? What did you underestimate?"></textarea></label><button class="primary" id="recordOutcomeBtn">Record outcome + update model</button>
+    <div class="card padded">
+      <div class="section-head"><div><span class="eyebrow">NEXT BEST ACTION</span><h3 id="nextActionTitle">Build a decision first</h3></div><span class="pill" id="nextActionType">—</span></div>
+      <p class="muted" id="nextActionText">The engine will identify the most decision-relevant unknown instead of asking every question.</p>
+      <div id="nextActionMeta" class="trace"></div>
     </div>
-    <div class="card padded"><span class="eyebrow">REFLECTION</span><h3>Learning from consequences</h3><div id="reflectionTrace" class="trace"></div></div>
+    <div class="card padded">
+      <div class="section-head"><div><span class="eyebrow">DECISION HEALTH</span><h3>Assumption check</h3></div></div>
+      <div id="healthList" class="stack"></div>
+    </div>
   </div>
-  <div class="card padded"><span class="eyebrow">DECISION JOURNAL</span><h3>Past outcomes</h3><div id="journal" class="journal"></div></div>
+  <div class="card padded"><div class="section-head"><div><span class="eyebrow">EXPLANATION</span><h3>Why the current leader is leading</h3></div></div><div id="dashExplanation" class="explain-grid"></div></div>
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">BENCHMARK</span><h3>Your historical calibration</h3><div id="benchmarkDash"></div></div>
+    <div class="card padded"><span class="eyebrow">REPLAY</span><h3>Latest decision timeline</h3><div id="miniReplay" class="timeline-mini"></div></div>
+  </div>
 </section>
 
-<section class="tab-panel" id="tab-memory">
+<section class="panel" id="panel-build">
   <div class="grid two">
-    <div class="card padded"><span class="eyebrow">LONG-TERM MEMORY</span><h3>What the lab has learned about you</h3><p class="muted">The model stores aggregate preference signals, not a transcript of everything you typed.</p><div id="memoryProfile" class="memory-profile"></div></div>
-    <div class="card padded"><span class="eyebrow">SEMANTIC MEMORY</span><h3>Related concepts</h3><div id="semanticMemory" class="memory-profile"></div></div>
+    <div class="card padded">
+      <span class="eyebrow">DECISION FRAME</span><h3>What are you deciding?</h3>
+      <label>Decision name<input id="decisionName" placeholder="e.g. Choose a university"></label>
+      <label>Context / constraints<textarea id="decisionContext" rows="4" placeholder="What is the goal? What constraints, resources, deadlines or risks matter?"></textarea></label>
+      <div class="form-grid">
+        <label>Domain<select id="domainSelect"></select></label>
+        <label>Horizon<select id="horizonSelect"><option value="short">Short</option><option value="medium" selected>Medium</option><option value="long">Long</option><option value="lifetime">Lifetime</option></select></label>
+        <label>Risk stance<select id="riskSelect"><option value="averse">Risk averse</option><option value="balanced" selected>Balanced</option><option value="seeking">Upside seeking</option></select></label>
+      </div>
+      <label>Decision objective<select id="objectiveSelect"></select></label>
+    </div>
+    <div class="card padded">
+      <div class="section-head"><div><span class="eyebrow">OPTIONS</span><h3>Alternatives</h3></div><button id="addOption" class="small">+ Add option</button></div>
+      <div id="optionEditor" class="stack"></div>
+      <div class="section-head compact"><div><span class="eyebrow">CONSTRAINTS</span><h3>Hard limits</h3></div></div>
+      <div class="form-grid">
+        <label>Budget limit<input id="budgetLimit" type="number" min="0" value="0" placeholder="0 = ignore"></label>
+        <label>Time limit (hours)<input id="timeLimit" type="number" min="0" value="0" placeholder="0 = ignore"></label>
+        <label>Deadline (days)<input id="deadlineDays" type="number" min="0" value="0" placeholder="0 = ignore"></label>
+      </div>
+    </div>
   </div>
-  <div class="card padded"><span class="eyebrow">PRIVACY + PORTABILITY</span><h3>Local-first architecture</h3><div class="privacy-list"><div>✓ Core analysis is deterministic and runs locally</div><div>✓ No API key required</div><div>✓ No server is required for normal use</div><div>✓ Preference profile can be exported/imported</div><div>✓ No decision data leaves the browser by default</div></div><div class="footer-actions left"><button class="secondary" id="exportBtn">Export profile</button><label class="file-btn secondary">Import profile<input type="file" id="importInput" accept="application/json" hidden></label><button class="ghost" id="clearMemoryBtn">Clear learned memory</button></div></div>
+
+  <div class="card padded"><div class="section-head"><div><span class="eyebrow">CRITERIA + UNCERTAINTY</span><h3>Rate each alternative with a range</h3></div><button id="addCriterion" class="small">+ Add criterion</button></div>
+    <p class="muted">Use low / likely / high values when uncertain. The engine uses a triangular uncertainty model and carries that uncertainty into simulation and regret calculations.</p>
+    <div id="criteriaEditor" class="stack"></div>
+  </div>
+
+  <div class="card padded"><div class="section-head"><div><span class="eyebrow">CORRELATION</span><h3>Criteria can move together</h3></div></div>
+    <p class="muted">Group related criteria so the model can reduce double-counting. Example: performance + speed or cost + fees.</p>
+    <div id="correlationEditor" class="stack"></div>
+  </div>
+
+  <div class="footer-actions"><button id="saveDecision" class="secondary large">Save decision snapshot</button><button id="startInterview" class="primary large">Run adaptive interview →</button></div>
+</section>
+
+<section class="panel" id="panel-interview">
+  <div class="grid two">
+    <div class="card padded">
+      <span class="eyebrow">ACTIVE LEARNING INTERVIEW</span><h3 id="questionTitle">No question yet</h3>
+      <p id="questionText" class="muted">Build a decision first. The system will choose the next question using uncertainty, information gain and ranking impact.</p>
+      <div id="questionChoices" class="choice-grid"></div>
+      <div class="learning-progress"><div id="learnBar"></div></div>
+      <p class="tiny" id="learnCount">0 observations</p>
+    </div>
+    <div class="card padded">
+      <span class="eyebrow">CONSISTENCY GUARD</span><h3>What your answers imply</h3>
+      <div id="consistencyList" class="stack"></div>
+    </div>
+  </div>
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">INFORMATION VALUE</span><h3>Best unknown to resolve</h3><div id="voiInterview" class="stack"></div></div>
+    <div class="card padded"><span class="eyebrow">LEARNING TRACE</span><h3>Why this question?</h3><div id="learningTrace" class="trace"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-model">
+  <div class="grid four">
+    <div class="metric card"><span>Leader</span><strong id="modelLeader">—</strong><small id="modelLeaderScore">—</small></div>
+    <div class="metric card"><span>Confidence</span><strong id="modelConfidence">—</strong><small>uncertainty-aware</small></div>
+    <div class="metric card"><span>Expected regret</span><strong id="modelRegret">—</strong><small>vs best modeled alternative</small></div>
+    <div class="metric card"><span>Pareto set</span><strong id="modelPareto">—</strong><small>non-dominated alternatives</small></div>
+  </div>
+  <div class="card padded"><div class="section-head"><div><span class="eyebrow">OBJECTIVE VIEW</span><h3>Decision modes</h3></div><select id="modelObjectiveInline" class="compact-select"></select></div><div id="resultBars" class="bars"></div></div>
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">SENSITIVITY</span><h3>What can flip the leader?</h3><div id="sensitivityList" class="stack"></div></div>
+    <div class="card padded"><span class="eyebrow">PARETO EXPLORER</span><h3>Tradeoff-efficient choices</h3><div id="paretoExplorer" class="pareto-grid"></div></div>
+  </div>
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">CORRELATION-AWARE UTILITY</span><h3>Where scores overlap</h3><div id="corrView" class="corr-grid"></div></div>
+    <div class="card padded"><span class="eyebrow">EXPLAINABLE DECISION</span><h3>Contribution breakdown</h3><div id="explainBreakdown" class="stack"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-scenarios">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">SCENARIO LAB</span><h3>Create alternate worlds</h3><p class="muted">Test changes in priorities, costs, risks, probabilities and time horizon.</p>
+      <label>Scenario name<input id="scenarioName" value="Budget shock"></label>
+      <label>Notes<textarea id="scenarioNote" rows="2" placeholder="e.g. budget drops 25%"></textarea></label>
+      <div id="scenarioControls" class="stack"></div>
+      <button id="addScenario" class="primary">Add scenario</button>
+    </div>
+    <div class="card padded"><span class="eyebrow">SCENARIO COMPARISON</span><h3>Leaders across worlds</h3><div id="scenarioResults" class="stack"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-tree">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">DECISION TREE</span><h3>Branch on uncertainty</h3><p class="muted">Add branches with probabilities and outcomes. The engine computes expected value and shows downside / upside.</p>
+      <label>Root decision<input id="treeRoot" value="What happens if we choose this path?"></label>
+      <div id="treeBranches" class="stack"></div>
+      <div class="footer-actions left"><button id="addBranch" class="secondary">+ Add branch</button><button id="calcTree" class="primary">Calculate expected value</button></div>
+    </div>
+    <div class="card padded"><span class="eyebrow">TREE ANALYSIS</span><h3 id="treeValue">—</h3><div id="treeAnalysis" class="trace"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-optimize">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">RESOURCE CONSTRAINTS</span><h3>Choose a combination, not just one option</h3>
+      <div class="form-grid"><label>Budget cap<input id="optBudget" type="number" value="100"></label><label>Time cap<input id="optTime" type="number" value="40"></label><label>Risk cap<input id="optRisk" type="number" value="100"></label></div>
+      <p class="muted">Use the current options as portfolio items, with cost and time derived from their first two dimensions. You can also edit the item table.</p>
+      <div id="optItems" class="stack"></div>
+      <button id="runOptimize" class="primary">Optimize combination</button>
+    </div>
+    <div class="card padded"><span class="eyebrow">PORTFOLIO RESULT</span><h3 id="optValue">—</h3><div id="optResult" class="trace"></div><div id="portfolioFrontier" class="stack"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-group">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">GROUP DECISION</span><h3>Model multiple decision-makers</h3><p class="muted">Each member gets a private preference profile. The engine aggregates them without requiring every preference to be identical.</p>
+      <div id="memberEditor" class="stack"></div>
+      <button id="addMember" class="secondary">+ Add member</button>
+    </div>
+    <div class="card padded"><span class="eyebrow">CONSENSUS</span><h3>Where do preferences converge?</h3><div id="groupResult" class="bars"></div><div id="groupDisagreement" class="stack"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-negotiate">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">NEGOTIATION LAB</span><h3>Search for mutually acceptable proposals</h3><p class="muted">Generate candidate compromises from the current options and member preference profiles.</p>
+      <div class="form-grid"><label>Minimum satisfaction<input id="negMin" type="number" min="0" max="100" value="60"></label><label>Proposal count<input id="negCount" type="number" min="3" max="20" value="8"></label><label>Compromise style<select id="negStyle"><option value="balanced">Balanced</option><option value="fairness">Max-min fairness</option><option value="pareto">Pareto-like</option></select></label></div>
+      <button id="runNegotiation" class="primary">Generate proposals</button>
+    </div>
+    <div class="card padded"><span class="eyebrow">PROPOSALS</span><h3>Negotiation frontier</h3><div id="negotiationResult" class="stack"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-timeline">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">SEQUENTIAL DECISIONS</span><h3>Decisions over time</h3>
+      <p class="muted">Model follow-on decisions, waiting value and preference decay instead of assuming everything is a one-shot choice.</p>
+      <div id="timelineEditor" class="stack"></div>
+      <button id="addTimeline" class="secondary">+ Add stage</button>
+      <button id="runTimeline" class="primary">Project timeline</button>
+    </div>
+    <div class="card padded"><span class="eyebrow">TIME-SENSITIVE UTILITY</span><h3 id="timelineTotal">—</h3><div id="timelineResult" class="trace"></div><div id="decayPanel" class="micro-panel"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-outcomes">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">POST-DECISION LEARNING</span><h3>What actually happened?</h3><p class="muted">Feed reality back into the model. The system separates preference error, information error and execution error.</p>
+      <div class="form-grid"><label>Chosen option<select id="outcomeOption"></select></label><label>Outcome quality<input id="outcomeQuality" type="range" min="0" max="100" value="70"><span class="range-value" id="qualityValue">70</span></label><label>Satisfaction<input id="outcomeSatisfaction" type="range" min="0" max="100" value="70"><span class="range-value" id="satisfactionValue">70</span></label></div>
+      <label>Expected score at decision time<input id="outcomeExpected" type="number" min="0" max="100" value="80"></label>
+      <label>What went wrong / right?<textarea id="outcomeNote" rows="4" placeholder="Did you misunderstand the criterion, miss information, or execute poorly?"></textarea></label>
+      <label>Primary error type<select id="outcomeError"><option value="none">No clear error</option><option value="preference">Preference/weighting</option><option value="information">Information/forecast</option><option value="execution">Execution</option><option value="external">External shock</option></select></label>
+      <button id="recordOutcome" class="primary">Record outcome + recalibrate</button>
+    </div>
+    <div class="card padded"><span class="eyebrow">CALIBRATION</span><h3>How accurate are your predictions?</h3><div id="calibrationChart" class="calibration"></div><div id="calibrationSummary" class="stack"></div></div>
+  </div>
+  <div class="card padded"><span class="eyebrow">DECISION JOURNAL</span><h3>Past outcomes</h3><div id="outcomeJournal" class="stack"></div></div>
+</section>
+
+<section class="panel" id="panel-replay">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">DECISION REPLAY</span><h3>Reconstruct how the model moved</h3><label>Decision<select id="replaySelect"></select></label><div id="replayTimeline" class="replay-timeline"></div></div>
+    <div class="card padded"><span class="eyebrow">COUNTERFACTUAL LAB</span><h3>What if you had chosen differently?</h3><p class="muted">Counterfactuals are modeled estimates, not facts. The engine keeps uncertainty visible.</p><div id="counterfactualOptions" class="choice-grid"></div><div id="counterfactualResult" class="trace"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="panel-memory">
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">PREFERENCE MEMORY</span><h3>What the system has learned</h3><div id="memoryPreferences" class="stack"></div></div>
+    <div class="card padded"><span class="eyebrow">SEMANTIC MEMORY</span><h3>Related concepts</h3><div id="semanticMemory" class="memory-grid"></div></div>
+  </div>
+  <div class="grid two">
+    <div class="card padded"><span class="eyebrow">DECISION BENCHMARKING</span><h3>Compare this decision with your history</h3><div id="benchmarkDetail"></div></div>
+    <div class="card padded"><span class="eyebrow">DECISION DECAY</span><h3>Staleness detector</h3><div id="decayDetail" class="stack"></div></div>
+  </div>
+  <div class="card padded"><span class="eyebrow">PORTABILITY</span><h3>Export / import your local learning profile</h3><div class="footer-actions left"><button id="exportProfile" class="secondary">Export profile</button><label class="secondary file-btn">Import profile<input id="importProfile" type="file" accept="application/json" hidden></label><button id="clearLearning" class="ghost">Clear learned memory</button></div></div>
+</section>
+
+<section class="panel" id="panel-templates">
+  <div class="card padded"><span class="eyebrow">DOMAIN PACKS</span><h3>Start with an appropriate decision model</h3><p class="muted">Templates provide criteria and structure; they do not decide what matters to you.</p><div id="templateGrid" class="template-grid"></div></div>
 </section>
 </main>
-
-<footer>Decision Lab · adaptive multi-criteria decision analysis · designed to inform human judgment, not replace it.</footer>
+<footer>Decision Lab • local-first decision intelligence • informs human judgment rather than replacing it.</footer>
 </div>
-<div class="modal" id="howModal" aria-hidden="true"><div class="modal-card"><button class="modal-close" id="closeHow">×</button><span class="eyebrow">MODEL CARD</span><h2>How Decision Lab learns</h2><div class="model-steps"><div><strong>1. Pairwise learning</strong><span>Choices are converted into preference observations and updated with a Bradley–Terry-style logistic model.</span></div><div><strong>2. Active learning</strong><span>The engine prefers questions that are ambiguous and likely to change the ranking, reducing unnecessary questions.</span></div><div><strong>3. Semantic memory</strong><span>Feature-hashed local text vectors connect related criteria across decisions without uploading your text.</span></div><div><strong>4. Consequence learning</strong><span>Outcome satisfaction becomes a reward signal that gradually calibrates your long-term preference profile.</span></div><div><strong>5. Robustness</strong><span>Monte Carlo sampling and sensitivity analysis reveal where the result is stable and where assumptions matter.</span></div></div></div></div>
+
+<div class="modal" id="modelModal" aria-hidden="true"><div class="modal-card"><button class="modal-close" id="closeModelCard">×</button><span class="eyebrow">MODEL CARD</span><h2>What the engine actually does</h2><div class="model-steps">
+<div><strong>Preference learning</strong><span>Pairwise choices update latent criterion/option utilities using a logistic Bradley–Terry-style update with uncertainty shrinkage.</span></div>
+<div><strong>Uncertainty</strong><span>Each score is a triangular distribution (low / likely / high). Monte Carlo samples propagate score, weight and risk uncertainty.</span></div>
+<div><strong>Active learning</strong><span>Questions are selected using ambiguity, posterior uncertainty and expected ranking impact; low-value questions are skipped.</span></div>
+<div><strong>Memory</strong><span>Related criteria are linked with local feature-hashed vectors. No server-side model is required.</span></div>
+<div><strong>Robustness</strong><span>Risk, regret, Pareto efficiency, sensitivity and scenario analysis expose where assumptions drive the result.</span></div>
+<div><strong>Learning loop</strong><span>Outcome feedback updates calibration, prediction error categories, long-term preferences and decision freshness.</span></div>
+</div></div></div>
+
 <script src="src/app.js" defer></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
 </body>
