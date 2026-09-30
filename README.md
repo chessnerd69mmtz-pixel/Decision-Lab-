@@ -4,6 +4,9 @@ Decision Lab is a privacy-first decision-intelligence web app. It is designed to
 
 ## Decision capabilities
 
+The live app now also includes **Argue With Me**: a persistent devil's-advocate conversation that decomposes a proposed decision into claims, assumptions, evidence gaps, alternatives, trade-offs, second-order effects, base-rate questions, bias traps, feasibility issues, downside risk, opportunity cost and reversibility. The thread persists locally and the critique updates as the user defends or concedes individual points.
+
+
 1. Uncertainty-aware scoring — low / likely / high estimates and Monte Carlo propagation.
 2. Decision trees — probability-weighted branches, expected value, upside and downside.
 3. Sequential decisions — multi-stage timeline modeling with time discounting.
