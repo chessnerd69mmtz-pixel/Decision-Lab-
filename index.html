@@ -36,6 +36,7 @@
   <button class="tab" data-tab="build">Build</button>
   <button class="tab" data-tab="interview">Interview</button>
   <button class="tab" data-tab="model">Model</button>
+  <button class="tab" data-tab="causal">Causal</button>
   <button class="tab" data-tab="scenarios">Scenarios</button>
   <button class="tab" data-tab="tree">Decision Tree</button>
   <button class="tab" data-tab="optimize">Optimize</button>
@@ -148,6 +149,28 @@
     <div class="card padded"><span class="eyebrow">CORRELATION-AWARE UTILITY</span><h3>Where scores overlap</h3><div id="corrView" class="corr-grid"></div></div>
     <div class="card padded"><span class="eyebrow">EXPLAINABLE DECISION</span><h3>Contribution breakdown</h3><div id="explainBreakdown" class="stack"></div></div>
   </div>
+</section>
+
+<section class="panel" id="panel-causal">
+  <div class="grid two">
+    <div class="card padded">
+      <span class="eyebrow">CAUSAL LAB</span><h3>Map a causal hypothesis</h3>
+      <p class="muted">This is an explicit causal model, not an automatic causal discovery system. Define the relationships you believe exist, then test interventions and direct/indirect effects.</p>
+      <div id="causalNodes" class="stack"></div>
+      <div class="footer-actions left"><button id="addCausalNode" class="secondary">+ Add node</button><button id="addCausalEdge" class="secondary">+ Add relationship</button></div>
+    </div>
+    <div class="card padded">
+      <span class="eyebrow">INTERVENTION</span><h3>What happens if we change X?</h3>
+      <div class="form-grid">
+        <label>Intervene on<select id="causalIntervene"></select></label>
+        <label>New value<input id="causalValue" type="number" min="0" max="100" value="80"></label>
+        <label>Target outcome<select id="causalTarget"></select></label>
+      </div>
+      <button id="runCausal" class="primary">Run intervention</button>
+      <div id="causalResult" class="trace"></div>
+    </div>
+  </div>
+  <div class="card padded"><span class="eyebrow">CAUSAL GRAPH</span><h3>Relationships + path effects</h3><div id="causalGraph" class="stack"></div></div>
 </section>
 
 <section class="panel" id="panel-scenarios">
