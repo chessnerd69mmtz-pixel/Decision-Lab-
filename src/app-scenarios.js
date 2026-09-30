@@ -1,0 +1,3 @@
+// --- Scenarios ---
+function scenarioResult(s){const w=criterionWeights().map((x,i)=>x*(s.weights?.[i]||1));normalize(w);return calculateResults(w)}
+function renderScenarios(){const el=$('#scenarioList');if(!state.scenarios.length){el.innerHTML='<div class="empty">No scenarios yet. Add one to compare assumptions such as “budget-focused” or “long-term reliability”.</div>';return}el.innerHTML=state.scenarios.map((s,i)=>{const r=scenarioResult(s),top=r[0];return `<div class="scenario"><div><strong>${esc(s.name)}</strong><div class="tiny">${s.note?esc(s.note):'Custom criterion multipliers'}</div></div><div class="scenario-result"><span>Leader</span><strong>${esc(top.name)}</strong></div><button class="icon-btn" data-remove-scenario="${i}">×</button></div>`}).join('')}
