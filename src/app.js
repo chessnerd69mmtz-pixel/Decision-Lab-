@@ -347,8 +347,8 @@ function runCausal(){
 }
 function renderTree(){
  $('#treeBranches').innerHTML=state.tree.branches.map((b,i)=>'<div class="tree-branch"><input data-tree-name="'+i+'" value="'+esc(b.name)+'"><input data-tree-prob="'+i+'" type="number" step=".01" min="0" max="1" value="'+b.prob+'"><input data-tree-value="'+i+'" type="number" value="'+b.value+'"><button class="icon-btn" data-remove-branch="'+i+'">×</button></div>').join('');
- const total=mean(state.tree.branches.map(b=>b.prob));const ev=state.tree.branches.reduce((s,b)=>s+b.prob*b.value,0);$('#treeValue').textContent='Expected value '+fmtNum(ev);
- $('#treeAnalysis').innerHTML='<div class="trace-item">Probability sum: '+(state.tree.branches.reduce((s,b)=>s+b.prob,0)*100).toFixed(1)+'%.</div><div class="trace-item">Best branch: '+esc(state.tree.branches.slice().sort((a,b)=>b.value-a.value)[0]?.name||'—')+'.</div><div class="trace-item">Downside branch: '+esc(state.tree.branches.slice().sort((a,b)=>a.value-b.value)[0]?.name||'—')+'.</div>';
+ const pSum=state.tree.branches.reduce((s,b)=>s+Math.max(0,b.prob),0)||1;const ev=state.tree.branches.reduce((s,b)=>s+(Math.max(0,b.prob)/pSum)*b.value,0);$('#treeValue').textContent='Expected value '+fmtNum(ev);
+ $('#treeAnalysis').innerHTML='<div class="trace-item">Probability sum (normalized for EV): '+(state.tree.branches.reduce((s,b)=>s+Math.max(0,b.prob),0)*100).toFixed(1)+'%.</div><div class="trace-item">Best branch: '+esc(state.tree.branches.slice().sort((a,b)=>b.value-a.value)[0]?.name||'—')+'.</div><div class="trace-item">Downside branch: '+esc(state.tree.branches.slice().sort((a,b)=>a.value-b.value)[0]?.name||'—')+'.</div>';
 }
 function renderOptimize(){
  const items=state.decision.options.map((o,i)=>({i,name:o.name,cost:Number(o.cost)||0,time:Number(o.time)||0,risk:Number(o.risk)||30,value:rank()[i]?.score||0}));
